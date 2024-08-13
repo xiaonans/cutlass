@@ -125,6 +125,9 @@ public:
     void const * ptr_C;
     void * ptr_D;
 
+    void const * ptr_scale;
+    void const * ptr_zero;
+
     int64_t batch_stride_A;
     int64_t batch_stride_B;
     int64_t batch_stride_C;
@@ -164,6 +167,8 @@ public:
       void const * ptr_B,
       void const * ptr_C,
       void * ptr_D,
+      void const * ptr_scale,
+      void const * ptr_zero,
       int64_t batch_stride_A,
       int64_t batch_stride_B,
       int64_t batch_stride_C,
@@ -179,6 +184,7 @@ public:
       UniversalArgumentsBase(mode, problem_size, batch_count, batch_stride_D),
       epilogue(epilogue),
       ptr_A(ptr_A), ptr_B(ptr_B), ptr_C(ptr_C), ptr_D(ptr_D),
+      ptr_scale(ptr_scale), ptr_zero(ptr_zero),
       batch_stride_A(batch_stride_A), batch_stride_B(batch_stride_B), batch_stride_C(batch_stride_C),
       stride_a(stride_a), stride_b(stride_b), stride_c(stride_c), stride_d(stride_d),
       ptr_gather_A_indices(ptr_gather_A_indices), ptr_gather_B_indices(ptr_gather_B_indices),
@@ -188,7 +194,7 @@ public:
       ldb = 0;
       ldc = 0;
       ldd = 0;
-      CUTLASS_TRACE_HOST("GemmUniversal::Arguments::Arguments() - problem_size: " << problem_size);
+      CUTLASS_TRACE_HOST("GemmUniversal::Arguments::Arguments() 1st - problem_size: " << problem_size);
     }
 
     /// constructs an arguments structure
@@ -225,7 +231,7 @@ public:
       stride_b = make_Coord(ldb);
       stride_c = make_Coord(ldc);
       stride_d = make_Coord(ldd);
-      CUTLASS_TRACE_HOST("GemmUniversal::Arguments::Arguments() - problem_size: " << problem_size);
+      CUTLASS_TRACE_HOST("GemmUniversal::Arguments::Arguments() 2nd - problem_size: " << problem_size);
     }
 
     /// Returns arguments for the transposed problem

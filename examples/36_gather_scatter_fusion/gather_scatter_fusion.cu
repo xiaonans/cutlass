@@ -285,6 +285,9 @@ int run(Options &options) {
       problem_size.mn());  // <- Create matrix D with dimensions M x N used to store output from
                            // CUTLASS kernel
 
+  cutlass::HostTensor<ElementInputB, LayoutInputB> tensor_scale(problem_size.kn());
+  cutlass::HostTensor<ElementInputB, LayoutInputB> tensor_zero(problem_size.kn());
+
   // Fill input and output matrices on host using CUTLASS helper functions
   cutlass::reference::host::TensorFillRandomUniform(
       tensor_a.host_view(),
@@ -310,6 +313,9 @@ int run(Options &options) {
   cutlass::reference::host::TensorFill(
     tensor_d_scattered.host_view());  // <- fill matrix D on host with zeros
 
+  cutlass::reference::host::TensorFill(tensor_scale.host_view(), ElementInputB(1));
+  cutlass::reference::host::TensorFill(tensor_zero.host_view(), ElementInputB(0));
+
   cutlass::HostTensor<int, LayoutOutput> tensor_indices(
       {options.index_size, 1});  // <- Create scatter indices with dimensions val_len x 1
 
@@ -329,6 +335,8 @@ int run(Options &options) {
   tensor_indices.sync_device();
   tensor_c.sync_device();
   tensor_d_scattered.sync_device();
+  tensor_scale.sync_device();
+  tensor_zero.sync_device();
 
   // Initialize alpha/beta for dot product computation
   ElementComputeEpilogue alpha = ElementComputeEpilogue(1);
@@ -348,6 +356,8 @@ int run(Options &options) {
       tensor_b.device_data(),             // <- reference to matrix B on device
       tensor_c.device_data(),             // <- reference to matrix C on device
       tensor_d_scattered.device_data(),   // <- reference to matrix D on device
+      tensor_scale.device_data(),
+      tensor_zero.device_data(),
       tensor_a.layout().capacity(problem_size.mk()),
       tensor_b.layout().capacity(cutlass::make_Coord(options.index_size, problem_size.k())),
       tensor_c.layout().capacity(problem_size.mn()),
