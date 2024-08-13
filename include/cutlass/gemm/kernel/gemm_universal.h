@@ -290,6 +290,9 @@ public:
     void * ptr_C;
     void * ptr_D;
 
+    void * ptr_scale;
+    void * ptr_zero;
+
     int64_t batch_stride_A;
     int64_t batch_stride_B;
     int64_t batch_stride_C;
@@ -321,6 +324,8 @@ public:
       ptr_B(const_cast<void *>(args.ptr_B)),
       ptr_C(const_cast<void *>(args.ptr_C)),
       ptr_D(args.ptr_D),
+      ptr_scale(const_cast<void *>(args.ptr_scale)),
+      ptr_zero(const_cast<void *>(args.ptr_zero)),
       batch_stride_A(args.batch_stride_A),
       batch_stride_B(args.batch_stride_B),
       batch_stride_C(args.batch_stride_C),
@@ -478,6 +483,9 @@ public:
   /// Executes one GEMM with an externally-provided swizzling function
   CUTLASS_DEVICE
   void run_with_swizzle(Params const &params, SharedStorage &shared_storage, ThreadblockSwizzle& threadblock_swizzle) {
+    if(threadIdx.x == 0 && blockIdx.x == 0 && threadIdx.y == 0 && blockIdx.y == 0 && threadIdx.z == 0 && blockIdx.z == 0)
+      printf("scale = %f\t zero = %f\n", __half2float(static_cast<half *>(params.ptr_scale)[0]), __half2float(static_cast<half *>(params.ptr_zero)[0]));
+      // printf("%f\n", __half2float(((half*)params.ptr_B.data())[0]));
 
     cutlass::gemm::GemmCoord threadblock_tile_offset =
         threadblock_swizzle.get_tile_offset(params.swizzle_log_tile);
