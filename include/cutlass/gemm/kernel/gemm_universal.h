@@ -484,8 +484,7 @@ public:
   CUTLASS_DEVICE
   void run_with_swizzle(Params const &params, SharedStorage &shared_storage, ThreadblockSwizzle& threadblock_swizzle) {
     if(threadIdx.x == 0 && blockIdx.x == 0 && threadIdx.y == 0 && blockIdx.y == 0 && threadIdx.z == 0 && blockIdx.z == 0)
-      printf("scale = %f\t zero = %f\n", __half2float(static_cast<half *>(params.ptr_scale)[0]), __half2float(static_cast<half *>(params.ptr_zero)[0]));
-      // printf("%f\n", __half2float(((half*)params.ptr_B.data())[0]));
+      printf("[cutlass::gemm::kernel::GemmUniversal][run_with_swizzle] scale = %f, zero = %f\n", __half2float(static_cast<half *>(params.ptr_scale)[0]), __half2float(static_cast<half *>(params.ptr_zero)[0]));
 
     cutlass::gemm::GemmCoord threadblock_tile_offset =
         threadblock_swizzle.get_tile_offset(params.swizzle_log_tile);
@@ -502,6 +501,8 @@ public:
 
     ElementA *ptr_A = static_cast<ElementA *>(params.ptr_A);
     ElementB *ptr_B = static_cast<ElementB *>(params.ptr_B);
+    ElementB *ptr_scale = static_cast<ElementB *>(params.ptr_scale);
+    ElementB *ptr_zero = static_cast<ElementB *>(params.ptr_zero);
 
     //
     // Fetch pointers based on mode.
@@ -558,6 +559,22 @@ public:
       tb_offset_B,
       params.ptr_gather_B_indices);
 
+    typename Mma::IteratorB iterator_scale(
+      params.params_B,
+      ptr_scale,
+      {problem_size_k, params.problem_size.n()},
+      thread_idx,
+      tb_offset_B,
+      params.ptr_gather_B_indices);
+
+    typename Mma::IteratorB iterator_zero(
+      params.params_B,
+      ptr_zero,
+      {problem_size_k, params.problem_size.n()},
+      thread_idx,
+      tb_offset_B,
+      params.ptr_gather_B_indices);
+
     // Broadcast the warp_id computed by lane 0 to ensure dependent code
     // is compiled as warp-uniform.
     int warp_idx = canonical_warp_idx_sync();
@@ -584,6 +601,8 @@ public:
       accumulators,
       iterator_A,
       iterator_B,
+      iterator_scale,
+      iterator_zero,
       accumulators);
 
     //

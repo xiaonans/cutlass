@@ -164,6 +164,12 @@ class MmaBase {
     /// Buffer for B operand
     AlignedBuffer<typename Operator::ElementB, ShapeB::kCount> operand_B;
 
+    /// Buffer for scale operand
+    AlignedBuffer<typename Operator::ElementB, ShapeB::kCount> operand_scale;
+
+    /// Buffer for zero operand
+    AlignedBuffer<typename Operator::ElementB, ShapeB::kCount> operand_zero;
+
    public:
 
     //
@@ -192,6 +198,18 @@ class MmaBase {
     CUTLASS_HOST_DEVICE
     TensorRefB operand_B_ref() {
       return TensorRefB{operand_B.data(), LayoutB()};
+    }
+
+    /// Returns a TensorRef to the scale operand
+    CUTLASS_HOST_DEVICE
+    TensorRefB operand_scale_ref() {
+      return TensorRefB{operand_scale.data(), LayoutB()};
+    }
+
+    /// Returns a TensorRef to the scale operand
+    CUTLASS_HOST_DEVICE
+    TensorRefB operand_zero_ref() {
+      return TensorRefB{operand_zero.data(), LayoutB()};
     }
   };
 

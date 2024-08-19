@@ -123,8 +123,8 @@ struct Options {
   
   Options():
     help(false),
-    problem_size({248, 1024, 1024}),
-    index_size(240),
+    problem_size({8, 4096, 4096}),
+    index_size(4096),
     reference_check(true),
     iterations(20) { }
 
@@ -289,19 +289,21 @@ int run(Options &options) {
   cutlass::HostTensor<ElementInputB, LayoutInputB> tensor_zero(problem_size.kn());
 
   // Fill input and output matrices on host using CUTLASS helper functions
-  cutlass::reference::host::TensorFillRandomUniform(
-      tensor_a.host_view(),
-      1,
-      ElementInputA(7),
-      ElementInputA(-8),
-      0);  // <- Fill matrix A on host with uniform-distribution random data
+  // cutlass::reference::host::TensorFillRandomUniform(
+  //     tensor_a.host_view(),
+  //     1,
+  //     ElementInputA(7),
+  //     ElementInputA(-8),
+  //     0);  // <- Fill matrix A on host with uniform-distribution random data
+  cutlass::reference::host::BlockFillSequential(tensor_a.host_data(), tensor_a.capacity());
 
-  cutlass::reference::host::TensorFillRandomUniform(
-      tensor_b.host_view(),
-      1,
-      ElementInputA(7),
-      ElementInputA(-8),
-      0);  // <- Fill matrix B on host with uniform-distribution random data
+  // cutlass::reference::host::TensorFillRandomUniform(
+  //     tensor_b.host_view(),
+  //     1,
+  //     ElementInputA(7),
+  //     ElementInputA(-8),
+  //     0);  // <- Fill matrix B on host with uniform-distribution random data
+  cutlass::reference::host::BlockFillSequential(tensor_b.host_data(), tensor_b.capacity());
 
   cutlass::reference::host::TensorFillRandomUniform(
       tensor_c.host_view(),
@@ -322,12 +324,13 @@ int run(Options &options) {
   // <- Fill tensor_b_indices on host with unique random integers
   std::vector<int> to_fill(problem_size.n()) ; // vector with ints.
   std::iota (std::begin(to_fill), std::end(to_fill), 0); // Fill with 0, 1, ...., problem_size.n()
-  { // std::random_shuffle was deprecated in C++14 and removed in C++17
-    std::random_device make_seed;
-    std::mt19937 source_of_randomness(make_seed());
-    std::shuffle(to_fill.begin(), to_fill.end(), source_of_randomness);
-  }
+  // { // std::random_shuffle was deprecated in C++14 and removed in C++17
+  //   std::random_device make_seed;
+  //   std::mt19937 source_of_randomness(make_seed());
+  //   std::shuffle(to_fill.begin(), to_fill.end(), source_of_randomness);
+  // }
   memcpy(tensor_indices.host_data(), to_fill.data(), options.index_size * sizeof(int));
+  
 
   // Copy data from host to GPU
   tensor_a.sync_device();
@@ -403,7 +406,7 @@ int run(Options &options) {
 
         for (int k = 0; k < problem_size.k(); ++k) {
             tensor_d_ref.at({i, b_c_d_col}) +=
-              alpha * tensor_a.at({i, k}) * tensor_b.at({k, b_c_d_col});
+              alpha * (tensor_a.at({i, k}) + 1) * (tensor_b.at({k, b_c_d_col}));
         }
 
         tensor_d_ref.at({i, b_c_d_col}) += (beta * tensor_c.at({i, b_c_d_col}));
